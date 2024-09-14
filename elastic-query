@@ -1,0 +1,697 @@
+//index
+PUT customer/_doc/1
+{
+  "id":5,
+  "name":"taner",
+  "isActive":true,
+  "info": {
+    "phone":"505 543 55 55",
+    "city":"IST"
+  }
+}
+
+
+
+//metadatalı
+GET customer/_doc/1
+
+
+//metedatasız
+GET customer/_source/1
+
+
+
+
+
+ //update
+ POST customer/_update/1
+ {
+   "doc": {
+     "name":"taner genc"
+   }
+ }
+
+GET customer/_doc/1
+
+
+
+//delete
+DELETE customer/_doc/1
+GET customer/_doc/1
+
+
+//mapping
+PUT product/_doc/12
+{
+   "id": 1,
+      "title": "iPhone 9",
+      "description": "An apple mobile which is nothing like apple",
+      "price": 549,
+      "discountPercentage": 12.96,
+      "rating": 4.69,
+      "stock": 94,
+      "brand": "Apple",
+      "category": "smartphones"
+}
+GET product/_doc/12
+GET product/_mapping
+DELETE product
+
+
+
+//exclusive mappings
+PUT /product
+{
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "long"
+      },
+      "title": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "description": {
+        "type": "text"
+      },
+      "price": {
+        "type": "float"
+      },
+      "discountPercentage": {
+        "type": "float"
+      },
+      "rating": {
+        "type": "float"
+      },
+      "stock": {
+        "type": "integer"
+      },
+      "brand": {
+        "type": "keyword"
+      },
+      "category": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+GET product/_mapping
+
+
+
+/*
+Term-level query türünde analiz süreci (tokenization ve normalization) yoktur
+   fakat full-text query türünde analiz süreci vardır.
+  Term-level query büyük/küçük harf duyarlılığına (case sensitive) sahiptir.
+  Belirtilen alandaki tam eşleşmeyi kontrol eder. Fiyat, ürün id veya kullanıcı adı gibi kesin bir değere dayalı olarak belgeleri bulmak için terim sorgusu kullanılabilir.
+  */
+//1-1 matching
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "term": {
+      "customer_first_name.keyword": {
+        "value": "Elyssa"  //Elsys try it
+      }
+    }
+  }
+}
+
+
+//case_insensitive
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "term": {
+      "customer_first_name.keyword": {
+        "value": "elyssa" ,
+        "case_insensitive": true
+
+      }
+    }
+  }
+}
+
+
+
+
+
+
+//terms multiple search like (sql in)
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "terms": {
+      "customer_first_name.keyword": [
+        "Yuri", "Elyssa"
+        ]
+    }
+  }
+}
+
+
+
+
+// Prefix Query
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "prefix": {
+      "customer_first_name.keyword": {
+        "value": "Yu"
+      }
+    }
+  }
+}
+
+
+
+// Range Query
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "range": {
+      "products.base_price": {
+        "gte": 10, //greater than equals
+        "lte": 20 //less than equals
+      }
+    }
+  }
+}
+
+
+
+//Wildcard Query (sql like) ?
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "wildcard": {
+      "customer_first_name.keyword": {
+        "value": "Tar??"
+      }
+    }
+  }
+}
+
+
+
+//Sonu "iq" ile biten kayıtlar *
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "wildcard": {
+      "customer_first_name.keyword": {
+        "value": "*iq"
+      }
+    }
+  }
+}
+
+
+
+//İçinde "ri" geçen kayıtlar
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "wildcard": {
+      "customer_first_name.keyword": {
+        "value": "*ri*"
+      }
+    }
+  }
+}
+
+
+
+
+
+//Fuzzy Query
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "fuzzy": {
+      "customer_first_name.keyword": {
+        "value": "dione"  //try it "diane", "iane", "ane"
+      }
+    }
+  }
+}
+
+
+
+
+ //Fuziness Query
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "fuzzy": {
+      "customer_first_name.keyword": {
+        "value": "ane",
+        "fuzziness":2  // 0-2 arasında değer alır
+      }
+    }
+  }
+}
+
+
+
+//Pagination
+POST kibana_sample_data_ecommerce/_search
+{
+  "size": 5,  //kac kayıt gösterileceği
+  "query": {
+    "fuzzy": {
+      "customer_first_name.keyword": {
+        "value": "ane",
+        "fuzziness":2  // 0-2 arasında değer alır
+      }
+    }
+  }
+}
+
+
+//Pagination from
+POST kibana_sample_data_ecommerce/_search
+{
+  "size": 5,
+  "from": 15,  //kacıncıdan göstermeye başlanacak
+  "query": {
+    "fuzzy": {
+      "customer_first_name.keyword": {
+        "value": "ane",
+        "fuzziness":2  // 0-2 arasında değer alır
+      }
+    }
+  }
+}
+
+
+// Response Includes/Excludes (Select)
+POST kibana_sample_data_ecommerce/_search
+{
+  "_source": {
+    "includes": [
+      "category",
+      "customer_first_name"
+    ],
+    "excludes": [
+      "currency"
+    ]
+  },
+  "from": 1,
+  "size": 5,
+  "query": {
+    "fuzzy": {
+      "customer_first_name.keyword": {
+        "value": "Stephanie",
+        "fuzziness": 0
+      }
+    }
+  }
+}
+
+
+
+//Sorting
+POST kibana_sample_data_ecommerce/_search
+{
+  "size": 5,
+  "from": 15,
+  "query": {
+    "fuzzy": {
+      "customer_first_name.keyword": {
+        "value": "ane",
+        "fuzziness":2
+      }
+    }
+  },
+  "sort": [
+    {
+      "products.base_price": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+
+
+
+//Full text search with score
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "match": {
+      "customer_full_name": "Diane"
+    }
+  }
+}
+
+
+
+
+
+// max score last name
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "match": {
+      "customer_full_name": "Diane Alvarez" //Burada Diane ve Alverez ayrı ayrı aratılır
+    }
+  }
+}
+
+
+// max score last name
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "match": {
+      "customer_full_name": {
+        "query": "Diane Alvarez", //Burada "Diane Alvarez" birlikte aranır ama keyword daha iyi
+        "operator": "and"
+      }
+    }
+  }
+}
+
+
+
+//muti match query
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "Yuri",
+      "fields": ["customer_first_name", "customer_last_name"]
+    }
+  }
+}
+
+
+
+
+
+//aşağıdaki query için 4425 kayıt olduğuna dikkat et
+//match ile arattığımızda Women's ayrı Clothing ayrı aranacak
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "match": {
+      "products.category": "Women's Clothing"
+    }
+  }
+}
+
+//Match phrease ile Women's Clothing bütün olarak aratılır
+//kayıt sayısı 1903'e düştü
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "match_phrase": {
+      "products.category": "Women's Clothing"
+    }
+  }
+}
+
+
+
+//match bool prefix
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "match_bool_prefix": {
+      "customer_full_name" : {
+        "query" : "Se"
+      }
+    }
+  }
+}
+
+
+
+//metric aggretaion
+POST kibana_sample_data_ecommerce/_search
+{
+
+  "aggs": {
+    "count_agg": {
+      "max": {
+        "field": "products.base_unit_price"
+      }
+    }
+  }
+}
+
+
+//bucket aggregation tekrar eden kayıtları gruplayarak verir
+//orbeğin erkek ayakkabısından bu kadar satılmış gibi
+GET kibana_sample_data_ecommerce/_search
+{
+  "_source": false,
+  "aggs": {
+    "buckets": {
+      "terms": {
+        "field": "category.keyword"
+      }
+    }
+  }
+}
+
+
+
+
+
+POST /_security/api_key
+{
+  "name": "application-key-1",
+  "metadata": { "application": "my-application"}
+}
+
+
+
+
+
+
+
+
+
+
+
+/*
+must:
+Bir sorgunun must içinde yer alması, belirtilen koşulların mutlaka sağlanması gerektiği anlamına gelir. Sorgu döndürülen her bir dökümanın, must içinde yer alan tüm koşulları karşılaması gerekir.
+
+
+Bu sorgu, Youssef Jensen adındaki müşterinin "Men's Shoes" kategorisinden bir ürün satın aldığı tüm dökümanları döndürür.
+*/
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "customer_full_name": "Youssef Jensen" }},
+        { "term": { "products.category.keyword": "Men's Shoes" }}
+      ]
+    }
+  }
+}
+
+
+
+/*
+Bir sorgunun must_not içinde yer alması, belirtilen koşulların sağlanmaması gerektiği anlamına gelir. Yani bu koşulları sağlayan dökümanlar sorgu sonucuna dahil edilmez.
+
+Bu sorgu, Youssef Jensen tarafından verilen ve Low Tide Media üreticisi tarafından üretilmeyen ürünleri içeren siparişleri bulur.
+*/
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "customer_full_name": "Youssef Jensen" }}
+      ],
+      "must_not": [
+        { "term": { "products.manufacturer.keyword": "Low Tide Media" }}
+      ]
+    }
+  }
+}
+
+
+
+/*
+SHOULD
+Bir sorgunun should içinde yer alması, belirtilen koşulun sağlanması durumunda dökümanın skorunun artırılacağını belirtir.
+
+Bu sorgu, Youssef Jensen tarafından verilen tüm siparişleri döndürür.
+Eğer sipariş New York şehrinde yapılmışsa, bu dökümanın sorgu skorunu artırır, dolayısıyla arama sonucunda daha üst sıralarda görünebilir.
+*/
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "customer_full_name": "Youssef Jensen" }}
+      ],
+      "should": [
+        { "match": { "geoip.city_name": "New York" }}
+      ]
+    }
+  }
+}
+
+
+
+/*
+Filter
+ Bir sorgunun filter içinde yer alması, belirtilen koşulların mutlaka sağlanması gerektiğini belirtir, ancak must koşulundan farklı olarak sorgu skorunu etkilemez. filter, genellikle performans odaklıdır çünkü filtreler, cachelenebilir.
+
+
+Bu sorgu, Youssef Jensen tarafından Cumartesi günü verilen ve "Men's Shoes" kategorisinde ürün içeren siparişleri döndürür.
+filter içindeki koşul, sorgu skorunu etkilemez ancak sorgu sonuçlarına dahil olmak için bu koşulun sağlanması gereklidir.
+
+*/
+POST kibana_sample_data_ecommerce/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "customer_full_name": "Youssef Jensen" }},
+        { "term": { "day_of_week": "Saturday" }}
+      ],
+      "filter": [
+        { "term": { "products.category.keyword": "Men's Shoes" }}
+      ]
+    }
+  }
+}
+
+
+
+
+
+ //NESTED QUERY
+
+
+
+ //Yeni İndeks Oluşturma
+ PUT /ecommerce_orders
+{
+  "mappings": {
+    "properties": {
+      "order_id": { "type": "keyword" },
+      "customer_full_name": { "type": "text" },
+      "order_date": { "type": "date" },
+      "products": {
+        "type": "nested",
+        "properties": {
+          "product_id": { "type": "integer" },
+          "product_name": { "type": "text" },
+          "manufacturer": { "type": "keyword" },
+          "price": { "type": "float" },
+          "category": { "type": "keyword" },
+          "discount_amount": { "type": "float" }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+//1. veri ekleme
+POST /ecommerce_orders/_doc/1
+{
+  "order_id": "001",
+  "customer_full_name": "John Doe",
+  "order_date": "2024-08-30T12:00:00Z",
+  "products": [
+    {
+      "product_id": 101,
+      "product_name": "Running Shoes",
+      "manufacturer": "Sporty Inc.",
+      "price": 80.00,
+      "category": "Men's Shoes",
+      "discount_amount": 10.00
+    },
+    {
+      "product_id": 102,
+      "product_name": "Athletic Socks",
+      "manufacturer": "Sporty Inc.",
+      "price": 15.00,
+      "category": "Men's Clothing",
+      "discount_amount": 2.00
+    }
+  ]
+}
+
+//2. veri ekleme
+POST /ecommerce_orders/_doc/2
+{
+  "order_id": "002",
+  "customer_full_name": "Jane Smith",
+  "order_date": "2024-08-31T14:00:00Z",
+  "products": [
+    {
+      "product_id": 103,
+      "product_name": "Running Shoes",
+      "manufacturer": "Sporty Inc.",
+      "price": 85.00,
+      "category": "Men's Shoes",
+      "discount_amount": 6.00
+    },
+    {
+      "product_id": 104,
+      "product_name": "Workout Shirt",
+      "manufacturer": "FitWear",
+      "price": 25.00,
+      "category": "Men's Clothing",
+      "discount_amount": 3.00
+    }
+  ]
+}
+
+
+
+// Bu sorgu, Running Shoes ürününü arar.
+GET /ecommerce_orders/_search
+{
+  "query": {
+    "nested": {
+      "path": "products",
+      "query": {
+        "bool": {
+          "must": [
+            { "match": { "products.product_name": "Running Shoes" }}
+          ]
+        }
+      }
+    }
+  }
+}
+
+
+
+
+//Bu sorgu, discount_amount değeri 5'ten büyük olan ürünleri arar.
+GET /ecommerce_orders/_search
+{
+  "query": {
+    "nested": {
+      "path": "products",
+      "query": {
+        "bool": {
+          "must": [
+            { "range": { "products.discount_amount": { "gt": 5 } }}
+          ]
+        }
+      }
+    }
+  }
+}
